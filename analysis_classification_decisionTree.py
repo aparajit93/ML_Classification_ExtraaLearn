@@ -40,6 +40,11 @@ Y = df['status'] #Create dependent variable
 
 # Splitting the dataset into train and test datasets in 70:30 split
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size = 0.3, shuffle = True, random_state = 1, stratify = Y)
+with open('ExtraaLearn_data_decisionTree.pkl', 'wb') as f:
+    pickle.dump(x_train, f)
+    pickle.dump(x_test, f)
+    pickle.dump(y_train, f)
+    pickle.dump(y_test, f)
 
 #Defining precission, recall, f1 score and plotting the confusion matrix
 def metrics_score(actual, predicted):

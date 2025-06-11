@@ -6,18 +6,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Import the Machine Learning models required from Scikit-Learn
-from sklearn.tree import DecisionTreeClassifier
+# from sklearn.tree import DecisionTreeClassifier
 from sklearn import tree
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
 
 # Import the other functions required from Scikit-Learn
-from sklearn.model_selection import train_test_split, GridSearchCV
+# from sklearn.model_selection import train_test_split, GridSearchCV
 
 # Import functions to get metric scores
 from sklearn.metrics import confusion_matrix,classification_report
 
 # Import streamlit webapp framework
 import streamlit as st
+
+# Import pickling library
+import pickle
 
 st.title('ML Classification Project: Extraa Learn')
 st.markdown('*Part of Data Science & Machine Learning course from MIT IDSS*')
@@ -96,3 +99,87 @@ selection_catCols = st.selectbox('Select a categorical variable',options=cat_col
 st.write(data[selection_catCols].value_counts())
 fig_catCol = stacked_barplot(data=data,predictor=selection_catCols,target='status')
 st.pyplot(fig_catCol)
+
+st.header('Classification Models')
+#Defining precission, recall, f1 score and plotting the confusion matrix
+def metrics_score(actual, predicted):
+    metrics_dict = classification_report(actual, predicted,output_dict=True)
+    metrics_report = pd.DataFrame.from_dict(metrics_dict)
+
+    cm = confusion_matrix(actual, predicted)
+    plt.figure(figsize=(8,5))
+    
+    sns.heatmap(cm, annot=True,  fmt='.2f')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    f = plt.gcf()
+    return f, metrics_report
+
+def DecisionTree_Visualizer(predictors,classifier,depth=None):
+    feature_names = list(predictors.columns)
+    plt.figure(figsize=(20, 10))
+    out = tree.plot_tree(
+        classifier,
+        max_depth = depth,
+        feature_names=feature_names,
+        filled=True,
+        fontsize=9,
+        node_ids=False,
+        class_names=True,
+    )
+    f = plt.gcf()
+    return f
+
+def DecisionTree_FeatureImportance(model_class, x):
+    #List out the features on which the tree splits and their importances
+    importances = model_class.feature_importances_
+    columns = x.columns
+    importance_dt = pd.DataFrame(importances, index = columns, columns = ['Importance']).sort_values(by = 'Importance', ascending = False)
+
+    plt.figure(figsize=(8, 8))
+    sns.barplot(x = importance_dt.Importance, y = importance_dt.index, color="violet")
+    plt.ylabel('')
+    f = plt.gcf()
+    return f
+
+model_opts = ['Decision Tree', 'Tuned Decision Tree']
+selection_classModel = st.selectbox('Select a classification model',options=model_opts)
+
+if selection_classModel == 'Decision Tree':
+    with open("ExtraaLearn_decisionTree.pkl", "rb") as f:
+        class_model = pickle.load(f)
+    with open('ExtraaLearn_data_decisionTree.pkl', 'rb') as f:
+        x_train = pickle.load(f)
+        x_test = pickle.load(f)
+        y_train = pickle.load(f)
+        y_test = pickle.load(f)
+if selection_classModel == 'Tuned Decision Tree':
+    with open("ExtraaLearn_decisionTree_tuned.pkl", "rb") as f:
+        class_model = pickle.load(f)
+    with open('ExtraaLearn_data_decisionTree.pkl', 'rb') as f:
+        x_train = pickle.load(f)
+        x_test = pickle.load(f)
+        y_train = pickle.load(f)
+        y_test = pickle.load(f)
+
+fig_model_visual = DecisionTree_Visualizer(x_train, class_model, depth=4)
+pred_train = class_model.predict(x_train)
+fig_predTrain, metric_predTrain = metrics_score(y_train, pred_train)
+pred_test = class_model.predict(x_test)
+fig_predTest, metric_predTest = metrics_score(y_test, pred_test)
+fig_featureImportance = DecisionTree_FeatureImportance(class_model,x_train)
+
+st.subheader('Model')
+st.pyplot(fig_model_visual)
+col1, col2 = st.columns(2)
+st.subheader('Model Performance')
+with col1:
+    st.write('Training Data')
+    st.write(metric_predTrain)
+    st.pyplot(fig_predTrain)
+with col2:
+    st.write('Test Data')
+    st.write(metric_predTest)
+    st.pyplot(fig_predTest)
+st.subheader('Feature Importances')
+st.pyplot(fig_featureImportance)
