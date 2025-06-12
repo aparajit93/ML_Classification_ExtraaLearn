@@ -40,11 +40,7 @@ Y = df['status'] #Create dependent variable
 
 # Splitting the dataset into train and test datasets in 70:30 split
 x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size = 0.3, shuffle = True, random_state = 1, stratify = Y)
-with open('ExtraaLearn_data_decisionTree.pkl', 'wb') as f:
-    pickle.dump(x_train, f)
-    pickle.dump(x_test, f)
-    pickle.dump(y_train, f)
-    pickle.dump(y_test, f)
+
 
 #Defining precission, recall, f1 score and plotting the confusion matrix
 def metrics_score(actual, predicted):
@@ -127,8 +123,73 @@ plt.title("Feature Importances")
 sns.barplot(x = importance_dt.Importance, y = importance_dt.index, color="violet")
 plt.show()
 
-with open("ExtraaLearn_decisionTree.pkl", "wb") as f:
+
+
+rf_class_model = RandomForestClassifier(random_state=1) #Create a random forest tree model
+rf_class_model.fit(x_train,y_train) #Training the random forest on training data
+
+#Checking the performance of the random forest to training data
+rf_class_pred_train = rf_class_model.predict(x_train)
+metrics_score(y_train, rf_class_pred_train)
+
+#Checking the performance of the random forest to test data
+rf_class_pred_test = rf_class_model.predict(x_test)
+metrics_score(y_test, rf_class_pred_test)
+
+# Choose the random forest classifier.
+rf_estimator = RandomForestClassifier(random_state=1)
+
+# Grid of parameters to choose from
+parameters = {
+    "max_depth": np.arange(1,40,5),
+    "max_leaf_nodes": [50, 75, 150, 250],
+    "min_samples_split": [10, 30, 50, 70],
+}
+# Run the grid search
+rf_grid_obj = GridSearchCV(rf_estimator, parameters, cv=5,scoring='f1',n_jobs=-1)
+rf_grid_obj = rf_grid_obj.fit(x_train, y_train)
+
+# Set the forest to the best combination of parameters
+rf_estimator = rf_grid_obj.best_estimator_
+
+# Fit the best forest to the data.
+rf_estimator.fit(x_train, y_train)
+
+#Checking the performance of the pruned random forest to training data
+rf_class_pred_train_tuned = rf_estimator.predict(x_train)
+metrics_score(y_train, rf_class_pred_train_tuned)
+
+#Checking the performance of the pruned random forest to test data
+rf_class_pred_test_tuned = rf_estimator.predict(x_test)
+metrics_score(y_test, rf_class_pred_test_tuned)
+
+#List out the features on which the tree splits and their importances
+rf_importances = rf_estimator.feature_importances_
+
+columns = x_train.columns
+
+importance_rf = pd.DataFrame(rf_importances, index = columns, columns = ['Importance']).sort_values(by = 'Importance', ascending = False)
+
+
+plt.figure(figsize=(8, 8))
+plt.title("Feature Importances")
+sns.barplot(x = importance_rf.Importance, y = importance_rf.index, color="violet")
+plt.show()
+
+with open('ExtraaLearn_testTrainData_decisionTree.pkl', 'wb') as f:
+    pickle.dump(x_train, f)
+    pickle.dump(x_test, f)
+    pickle.dump(y_train, f)
+    pickle.dump(y_test, f)
+
+with open("ExtraaLearn_model_decisionTree.pkl", "wb") as f:
     pickle.dump(dt_class_model, f)
 
-with open("ExtraaLearn_decisionTree_tuned.pkl", "wb") as f:
+with open("ExtraaLearn_model_decisionTree_tuned.pkl", "wb") as f:
     pickle.dump(dt_class_tuned, f)
+
+with open("ExtraaLearn_model_randomForest.pkl", "wb") as f:
+    pickle.dump(rf_class_model, f)
+
+with open("ExtraaLearn_model_randomForest_tuned.pkl", "wb") as f:
+    pickle.dump(rf_estimator, f)

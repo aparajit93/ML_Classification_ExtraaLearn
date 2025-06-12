@@ -42,8 +42,13 @@ num_cols = data.select_dtypes(include = ['int64','float64']).columns.tolist() #L
 num_cols.remove('status') #Remove target variable from numerical columns list
 
 def hist_box(data, col):
+    """
+    Plot a histogram and box plot
+
+    data: dataframe
+    col: independent variable
+    """
     f, (ax_box, ax_hist) = plt.subplots(2, sharex='col', gridspec_kw={'height_ratios': (0.15, 0.85)}, figsize=(12, 6))
-    # Adding a graph in each part
     # plt.suptitle(col)
     sns.boxplot(data=data, x=col, ax=ax_box, showmeans=True) #Boxplot
     sns.histplot(data=data, x=col, kde=True, ax=ax_hist) #Histogram
@@ -94,15 +99,19 @@ st.pyplot(fig_numCol)
 #         case 'page_views_per_visit':
 #             st.markdown('Customers on average view only 2-4 pages per visit. Though there are quite a few outliers of people visiting more than 10 pages, this number is still much lower than those visting only a few pages.')
 
+#Categorical data analysis
 st.subheader('Categorical')
 selection_catCols = st.selectbox('Select a categorical variable',options=cat_cols)
 st.write(data[selection_catCols].value_counts())
 fig_catCol = stacked_barplot(data=data,predictor=selection_catCols,target='status')
 st.pyplot(fig_catCol)
 
+#Machine Learning through Decision Trees and Random Forests
 st.header('Classification Models')
-#Defining precission, recall, f1 score and plotting the confusion matrix
+
+
 def metrics_score(actual, predicted):
+    #Defining precission, recall, f1 score and plotting the confusion matrix
     metrics_dict = classification_report(actual, predicted,output_dict=True)
     metrics_report = pd.DataFrame.from_dict(metrics_dict)
 
@@ -115,20 +124,20 @@ def metrics_score(actual, predicted):
     f = plt.gcf()
     return f, metrics_report
 
-def DecisionTree_Visualizer(predictors,classifier,depth=None):
-    feature_names = list(predictors.columns)
-    plt.figure(figsize=(20, 10))
-    out = tree.plot_tree(
-        classifier,
-        max_depth = depth,
-        feature_names=feature_names,
-        filled=True,
-        fontsize=9,
-        node_ids=False,
-        class_names=True,
-    )
-    f = plt.gcf()
-    return f
+# def DecisionTree_Visualizer(predictors,classifier,depth=None):
+#     feature_names = list(predictors.columns)
+#     plt.figure(figsize=(20, 10))
+#     out = tree.plot_tree(
+#         classifier,
+#         max_depth = depth,
+#         feature_names=feature_names,
+#         filled=True,
+#         fontsize=9,
+#         node_ids=False,
+#         class_names=True,
+#     )
+#     f = plt.gcf()
+#     return f
 
 def DecisionTree_FeatureImportance(model_class, x):
     #List out the features on which the tree splits and their importances
@@ -142,35 +151,41 @@ def DecisionTree_FeatureImportance(model_class, x):
     f = plt.gcf()
     return f
 
-model_opts = ['Decision Tree', 'Tuned Decision Tree']
+model_opts = ['Decision Tree', 'Tuned Decision Tree', 'Random Forest', 'Tuned Random Forest']
 selection_classModel = st.selectbox('Select a classification model',options=model_opts)
 
 if selection_classModel == 'Decision Tree':
-    with open("ExtraaLearn_decisionTree.pkl", "rb") as f:
+    with open("ExtraaLearn_model_decisionTree.pkl", "rb") as f:
         class_model = pickle.load(f)
-    with open('ExtraaLearn_data_decisionTree.pkl', 'rb') as f:
-        x_train = pickle.load(f)
-        x_test = pickle.load(f)
-        y_train = pickle.load(f)
-        y_test = pickle.load(f)
+
 if selection_classModel == 'Tuned Decision Tree':
-    with open("ExtraaLearn_decisionTree_tuned.pkl", "rb") as f:
+    with open("ExtraaLearn_model_decisionTree_tuned.pkl", "rb") as f:
         class_model = pickle.load(f)
-    with open('ExtraaLearn_data_decisionTree.pkl', 'rb') as f:
+
+if selection_classModel == 'Random Forest':
+    with open("ExtraaLearn_model_randomForest.pkl", "rb") as f:
+        class_model = pickle.load(f)
+
+if selection_classModel == 'Tuned Random Forest':
+    with open("ExtraaLearn_model_randomForest_tuned.pkl", "rb") as f:
+        class_model = pickle.load(f)
+
+
+with open('ExtraaLearn_testTrainData_decisionTree.pkl', 'rb') as f:
         x_train = pickle.load(f)
         x_test = pickle.load(f)
         y_train = pickle.load(f)
         y_test = pickle.load(f)
 
-fig_model_visual = DecisionTree_Visualizer(x_train, class_model, depth=4)
+# fig_model_visual = DecisionTree_Visualizer(x_train, class_model, depth=4)
 pred_train = class_model.predict(x_train)
 fig_predTrain, metric_predTrain = metrics_score(y_train, pred_train)
 pred_test = class_model.predict(x_test)
 fig_predTest, metric_predTest = metrics_score(y_test, pred_test)
 fig_featureImportance = DecisionTree_FeatureImportance(class_model,x_train)
 
-st.subheader('Model')
-st.pyplot(fig_model_visual)
+# st.subheader('Model')
+# st.pyplot(fig_model_visual)
 col1, col2 = st.columns(2)
 st.subheader('Model Performance')
 with col1:
